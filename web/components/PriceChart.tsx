@@ -17,10 +17,12 @@ import {
   type Time,
   type UTCTimestamp,
 } from "lightweight-charts";
-import { ChartArea, ChartCandlestick, Crosshair } from "lucide-react";
+import { ChartArea, ChartCandlestick, Crosshair, LineChart } from "lucide-react";
 import type { EventKind, Trend } from "@/lib/types";
 import { PERIODS, periodChange, seriesFor, type ChartPoint, type Period } from "@/lib/series";
 import { formatCompact, formatDate, formatPct, formatPrice, trendColor } from "@/lib/format";
+import { Panel } from "./Panel";
+import { Segmented } from "./Segmented";
 
 type Mode = "area" | "candle";
 
@@ -32,13 +34,13 @@ type Hover = {
   previousClose: number;
 };
 
-const UP = "#00e08a";
-const DOWN = "#ff4d5e";
+const UP = "#1fc37e";
+const DOWN = "#f0505e";
 
 const EVENT_COLORS: Record<EventKind, string> = {
   positivo: UP,
   negativo: DOWN,
-  neutro: "#2f80ff",
+  neutro: "#3b82f6",
 };
 
 const TOOLTIP_WIDTH = 232;
@@ -52,7 +54,6 @@ export function PriceChart({ trend }: { trend: Trend }) {
 
   const points = useMemo(() => seriesFor(trend, period), [trend, period]);
   const change = periodChange(points);
-  const last = points[points.length - 1];
   const periodEvents = points.filter((p) => p.events.length > 0).reverse();
 
   useEffect(() => {
@@ -62,20 +63,20 @@ export function PriceChart({ trend }: { trend: Trend }) {
       autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
-        textColor: "#777777",
+        textColor: "#6b7588",
         fontFamily: getComputedStyle(element).fontFamily,
-        fontSize: 10,
+        fontSize: 11,
       },
       grid: {
-        vertLines: { color: "#111111" },
-        horzLines: { color: "#111111" },
+        vertLines: { color: "#121821" },
+        horzLines: { color: "#121821" },
       },
-      rightPriceScale: { borderColor: "#222222" },
-      timeScale: { borderColor: "#222222", rightOffset: 2 },
+      rightPriceScale: { borderColor: "#1c2330" },
+      timeScale: { borderColor: "#1c2330", rightOffset: 2 },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: "#555555", style: LineStyle.Dashed, labelBackgroundColor: "#1c1c1c" },
-        horzLine: { color: "#555555", style: LineStyle.Dashed, labelBackgroundColor: "#1c1c1c" },
+        vertLine: { color: "#3a4456", style: LineStyle.Dashed, labelBackgroundColor: "#171e29" },
+        horzLine: { color: "#3a4456", style: LineStyle.Dashed, labelBackgroundColor: "#171e29" },
       },
       localization: { locale: "pt-BR" },
     });
@@ -102,7 +103,7 @@ export function PriceChart({ trend }: { trend: Trend }) {
         bottomColor: `${color}00`,
         priceLineVisible: false,
         crosshairMarkerBackgroundColor: color,
-        crosshairMarkerBorderColor: "#000000",
+        crosshairMarkerBorderColor: "#07090d",
       });
       priceSeries.setData(points.map((p) => ({ time: time(p), value: p.close })));
     } else {
@@ -184,62 +185,41 @@ export function PriceChart({ trend }: { trend: Trend }) {
     : 0;
 
   return (
-    <div className="flex flex-col rounded-sm border border-line bg-carbon">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <div className="flex items-baseline gap-3">
-          <span className="font-mono text-xs tracking-wider text-muted">{trend.ticker}</span>
-          <span className="font-mono text-xl tabular-nums">{formatPrice(last.close, trend.currency)}</span>
-          <span className={`font-mono text-xs tabular-nums ${trendColor(change)}`}>
-            {formatPct(change)} <span className="text-muted">· {period}</span>
+    <Panel
+      icon={LineChart}
+      className="h-full"
+      bodyClassName="flex flex-col"
+      title={
+        <span className="flex items-baseline gap-2">
+          Histórico de preço
+          <span className={`text-[12px] font-medium tabular-nums ${trendColor(change)}`}>
+            {formatPct(change)} <span className="font-normal text-muted">no período {period}</span>
           </span>
-        </div>
+        </span>
+      }
+      actions={
         <div className="flex items-center gap-2">
-          <div className="flex rounded-sm border border-line" role="group" aria-label="Período">
-            {PERIODS.map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                aria-pressed={period === p}
-                className={`px-2.5 py-1 font-mono text-[11px] transition-colors duration-150 ${
-                  period === p ? "bg-white text-black" : "text-muted hover:bg-raised hover:text-white"
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-          <div className="flex rounded-sm border border-line" role="group" aria-label="Tipo de gráfico">
-            {(
-              [
-                ["area", ChartArea, "Área"],
-                ["candle", ChartCandlestick, "Candlestick"],
-              ] as const
-            ).map(([value, Icon, label]) => (
-              <button
-                key={value}
-                onClick={() => setMode(value)}
-                aria-pressed={mode === value}
-                aria-label={label}
-                title={label}
-                className={`px-2 py-1 transition-colors duration-150 ${
-                  mode === value ? "bg-white text-black" : "text-muted hover:bg-raised hover:text-white"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
-              </button>
-            ))}
-          </div>
+          <Segmented label="Período" options={PERIODS.map((p) => ({ value: p, label: p }))} value={period} onChange={setPeriod} />
+          <Segmented
+            label="Tipo de gráfico"
+            options={[
+              { value: "area", label: <ChartArea className="h-3.5 w-3.5" strokeWidth={1.75} />, title: "Área" },
+              { value: "candle", label: <ChartCandlestick className="h-3.5 w-3.5" strokeWidth={1.75} />, title: "Candlestick" },
+            ]}
+            value={mode}
+            onChange={setMode}
+          />
         </div>
-      </div>
-
-      <div className="relative h-[380px] font-mono">
+      }
+    >
+      <div className="relative min-h-[400px] flex-1">
         <div ref={containerRef} className="absolute inset-0" />
         {hover && (
           <div
-            className="pointer-events-none absolute top-3 z-10 rounded-sm border border-[#333] bg-void/95 p-3 text-[11px] shadow-[0_0_24px_rgba(0,0,0,0.8)]"
+            className="pointer-events-none absolute top-3 z-10 rounded-md border border-edge bg-panel/95 p-3 text-[12px] shadow-[0_12px_32px_rgba(0,0,0,0.6)] backdrop-blur"
             style={{ left: tooltipLeft, width: TOOLTIP_WIDTH }}
           >
-            <div className="mb-2 flex items-center justify-between border-b border-line pb-1.5 uppercase tracking-widest text-muted">
+            <div className="mb-2 flex items-center justify-between border-b border-line pb-1.5 font-medium text-soft">
               <span>{formatDate(hover.point.time)}</span>
               <span className={trendColor(hover.point.close - hover.previousClose)}>
                 {formatPct((hover.point.close / hover.previousClose - 1) * 100)}
@@ -267,7 +247,7 @@ export function PriceChart({ trend }: { trend: Trend }) {
               <dd className="text-right">{formatCompact(hover.point.volume, trend.currency)}</dd>
             </dl>
             {hover.point.events.length > 0 && (
-              <ul className="mt-2 flex flex-col gap-1.5 border-t border-line pt-2 font-sans">
+              <ul className="mt-2 flex flex-col gap-1.5 border-t border-line pt-2">
                 {hover.point.events.map((event) => (
                   <li key={event.title} className="flex gap-2 leading-snug">
                     <span
@@ -276,7 +256,7 @@ export function PriceChart({ trend }: { trend: Trend }) {
                     />
                     <span className="text-soft">
                       {event.time !== hover.point.time && (
-                        <span className="mr-1 font-mono text-muted">{formatDate(event.time)}</span>
+                        <span className="mr-1 text-muted">{formatDate(event.time)}</span>
                       )}
                       {event.title}
                     </span>
@@ -289,19 +269,19 @@ export function PriceChart({ trend }: { trend: Trend }) {
       </div>
 
       <div className="border-t border-line px-4 py-3">
-        <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted">
-          <Crosshair className="h-3 w-3" strokeWidth={1.5} />
-          Gatilhos na linha do tempo
+        <div className="mb-2.5 flex items-center gap-2 text-[12px] font-semibold text-soft">
+          <Crosshair className="h-4 w-4 text-muted" strokeWidth={1.75} />
+          Fatos relevantes no período
         </div>
         {periodEvents.length === 0 ? (
-          <p className="text-xs text-muted">Nenhum fato relevante neste período.</p>
+          <p className="text-[12px] text-muted">Nenhum fato relevante neste período.</p>
         ) : (
           <ul className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
             {periodEvents.flatMap((p) =>
               p.events.map((event) => (
-                <li key={`${event.time}-${event.title}`} className="flex min-w-0 items-center gap-2 text-xs">
+                <li key={`${event.time}-${event.title}`} className="flex min-w-0 items-center gap-2.5 text-[12px]">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: EVENT_COLORS[event.kind] }} />
-                  <span className="w-24 shrink-0 whitespace-nowrap font-mono text-[11px] text-muted">{formatDate(event.time)}</span>
+                  <span className="w-[5.5rem] shrink-0 whitespace-nowrap tabular-nums text-muted">{formatDate(event.time)}</span>
                   <span className="truncate text-soft">{event.title}</span>
                 </li>
               )),
@@ -309,6 +289,6 @@ export function PriceChart({ trend }: { trend: Trend }) {
           </ul>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

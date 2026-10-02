@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Satellite, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { MACRO_TAPE } from "@/lib/mock-data";
 import { formatPct, trendColor } from "@/lib/format";
+import { Logo } from "./Logo";
 
 type Exchange = {
   label: string;
@@ -17,11 +18,11 @@ const EXCHANGES: Exchange[] = [
   { label: "NYSE", timeZone: "America/New_York", open: 9 * 60 + 30, close: 16 * 60 },
 ];
 
-const NAV = [
-  { href: "#radar", label: "Radar" },
-  { href: "#grafico", label: "Gráfico" },
-  { href: "#tese", label: "Tese" },
-  { href: "#educacao", label: "Entenda" },
+export const NAV = [
+  { id: "visao-geral", label: "Visão geral" },
+  { id: "radar", label: "Radar" },
+  { id: "analise", label: "Análise" },
+  { id: "educacao", label: "Educação" },
 ];
 
 function isOpen(exchange: Exchange, now: Date): boolean {
@@ -38,6 +39,25 @@ function isOpen(exchange: Exchange, now: Date): boolean {
   return minutes >= exchange.open && minutes < exchange.close;
 }
 
+function useActiveSection(): string {
+  const [active, setActive] = useState(NAV[0].id);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: "-120px 0px -55% 0px" },
+    );
+    for (const item of NAV) {
+      const element = document.getElementById(item.id);
+      if (element) observer.observe(element);
+    }
+    return () => observer.disconnect();
+  }, []);
+  return active;
+}
+
 export function Header({
   query,
   onQueryChange,
@@ -49,6 +69,7 @@ export function Header({
 }) {
   const [now, setNow] = useState<Date | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const active = useActiveSection();
 
   useEffect(() => {
     const tick = () => setNow(new Date());
@@ -76,35 +97,41 @@ export function Header({
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
-        timeZone: "UTC",
+        timeZone: "America/Sao_Paulo",
       }).format(now)
     : "--:--:--";
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-void/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-4 px-4 sm:gap-6 sm:px-6">
-        <a href="#radar" className="flex shrink-0 items-center gap-2">
-          <Satellite className="h-4 w-4" strokeWidth={1.5} />
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] sm:text-sm sm:tracking-[0.3em]">MarketAnalyst</span>
-          <span className="hidden font-mono text-[10px] uppercase tracking-widest text-muted sm:inline">
-            {"// Terminal"}
-          </span>
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-void/85 backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-4 px-4 sm:gap-8 sm:px-6">
+        <a href="#visao-geral" className="flex shrink-0 items-center gap-2.5">
+          <Logo />
+          <span className="text-[15px] font-semibold tracking-tight">MarketAnalyst</span>
+          <span className="hidden h-4 w-px bg-edge sm:block" />
+          <span className="hidden text-[13px] font-medium text-muted sm:inline">Terminal</span>
         </a>
 
-        <nav className="hidden items-center gap-5 lg:flex">
-          {NAV.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="text-[11px] uppercase tracking-[0.2em] text-muted transition-colors duration-150 hover:text-white"
-            >
-              {item.label}
-            </a>
-          ))}
+        <nav className="hidden h-full items-stretch gap-1 lg:flex" aria-label="Seções">
+          {NAV.map((item) => {
+            const current = active === item.id;
+            return (
+              <a
+                key={item.id}
+                href={`#${item.id}`}
+                aria-current={current ? "true" : undefined}
+                className={`relative flex items-center px-3 text-[13px] font-medium transition-colors duration-150 ${
+                  current ? "text-fg" : "text-muted hover:text-fg"
+                }`}
+              >
+                {item.label}
+                {current && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-brand" />}
+              </a>
+            );
+          })}
         </nav>
 
-        <div className="relative ml-auto min-w-0 flex-1 sm:max-w-xs">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted" />
+        <div className="relative ml-auto min-w-0 flex-1 sm:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" strokeWidth={1.75} />
           <input
             ref={inputRef}
             id="search"
@@ -118,55 +145,57 @@ export function Header({
                 event.currentTarget.blur();
               }
             }}
-            placeholder="Buscar ativo ou ticker"
+            placeholder="Buscar ativo, ticker ou setor"
             aria-label="Buscar ativos"
-            className="h-8 w-full rounded-sm border border-line bg-carbon pl-8 pr-14 font-mono text-xs text-white placeholder:text-muted outline-none transition-colors duration-150 focus:border-[#555]"
+            className="h-9 w-full rounded-md border border-line bg-carbon pl-9 pr-14 text-[13px] text-fg placeholder:text-muted outline-none transition-colors duration-150 hover:border-edge focus:border-brand/60 focus:ring-2 focus:ring-brand/15"
           />
           {query ? (
             <button
               onClick={() => onQueryChange("")}
               aria-label="Limpar busca"
-              className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 font-mono text-[10px] text-muted transition-colors duration-150 hover:text-white"
+              className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded px-1 text-[11px] tabular-nums text-muted transition-colors duration-150 hover:text-fg"
             >
               {resultCount}
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </button>
           ) : (
-            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm border border-line px-1.5 font-mono text-[10px] text-muted">
+            <kbd className="absolute right-2 top-1/2 -translate-y-1/2 rounded border border-line bg-panel px-1.5 font-mono text-[10px] text-muted">
               /
             </kbd>
           )}
         </div>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden items-center gap-5 xl:flex">
           {EXCHANGES.map((exchange) => {
             const open = now ? isOpen(exchange, now) : false;
             return (
-              <div key={exchange.label} className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest">
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${open ? "bg-up shadow-[0_0_6px_var(--color-up)]" : "bg-[#444]"}`}
-                />
-                <span className="text-soft">{exchange.label}</span>
-                <span className={open ? "text-up" : "text-muted"}>{now ? (open ? "Aberto" : "Fechado") : "—"}</span>
+              <div key={exchange.label} className="flex items-center gap-2 text-[12px]">
+                <span className="relative flex h-2 w-2">
+                  {open && <span className="absolute inset-0 animate-ping rounded-full bg-up/60" />}
+                  <span className={`relative h-2 w-2 rounded-full ${open ? "bg-up" : "bg-edge"}`} />
+                </span>
+                <span className="font-medium text-fg">{exchange.label}</span>
+                <span className="text-muted">{now ? (open ? "Aberto" : "Fechado") : "—"}</span>
               </div>
             );
           })}
-          <span className="font-mono text-[10px] tabular-nums text-muted">{clock} UTC</span>
+          <div className="flex flex-col items-end leading-tight">
+            <span className="font-mono text-[12px] tabular-nums text-fg">{clock}</span>
+            <span className="text-[10px] text-muted">Brasília</span>
+          </div>
         </div>
       </div>
 
-      <div className="border-t border-line bg-carbon">
-        <div className="mx-auto flex h-7 max-w-[1440px] items-center gap-6 overflow-x-auto px-4 font-mono text-[11px] sm:px-6">
+      <div className="border-t border-line bg-carbon/80">
+        <div className="mx-auto flex h-8 max-w-[1600px] items-center overflow-x-auto px-4 text-[12px] sm:px-6">
           {MACRO_TAPE.map((quote) => (
-            <div key={quote.label} className="flex shrink-0 items-center gap-2">
-              <span className="uppercase tracking-wider text-muted">{quote.label}</span>
-              <span className="tabular-nums text-white">{quote.value}</span>
+            <div key={quote.label} className="flex shrink-0 items-center gap-2 border-r border-line px-4 first:pl-0">
+              <span className="font-medium text-muted">{quote.label}</span>
+              <span className="tabular-nums text-fg">{quote.value}</span>
               <span className={`tabular-nums ${trendColor(quote.change)}`}>{formatPct(quote.change)}</span>
             </div>
           ))}
-          <span className="ml-auto shrink-0 rounded-sm border border-line px-1.5 text-[10px] uppercase tracking-widest text-muted">
-            Dados simulados
-          </span>
+          <span className="ml-auto shrink-0 pl-4 text-[11px] text-muted">Cotações simuladas</span>
         </div>
       </div>
     </header>

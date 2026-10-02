@@ -27,6 +27,7 @@ const PERIOD_BARS: Record<Period, number | null> = {
 const TOTAL_BARS = 2520;
 const WEEKLY_THRESHOLD = 400;
 const END_DATE_MS = Date.UTC(2026, 9, 1);
+export const LAST_SESSION = END_DATE_MS / 1000;
 const DAY_MS = 86_400_000;
 
 function mulberry32(seed: number): () => number {
@@ -159,4 +160,12 @@ export function sparkline(trend: Trend, bars = 30): number[] {
   return dailyHistory(trend)
     .slice(-bars)
     .map((p) => p.close);
+}
+
+export function yearRange(trend: Trend): { low: number; high: number } {
+  const year = dailyHistory(trend).slice(-252);
+  return {
+    low: Math.min(...year.map((p) => p.low)),
+    high: Math.max(...year.map((p) => p.high)),
+  };
 }
