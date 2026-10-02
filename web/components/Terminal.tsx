@@ -85,7 +85,7 @@ export function Terminal() {
               Nenhum ativo encontrado para &ldquo;{query}&rdquo;.
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {visible.map((trend) => (
                 <TrendCard
                   key={trend.id}
@@ -104,11 +104,11 @@ export function Terminal() {
             title={`Análise · ${selected.name}`}
             subtitle={`${selected.vehicle} · passe o cursor no gráfico para ver preço, volume e fatos relevantes`}
           />
-          <div className="grid gap-3 lg:grid-cols-12">
-            <div id="grafico" className="scroll-mt-28 lg:col-span-8">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
+            <div id="grafico" className="min-w-0 scroll-mt-28 lg:col-span-8">
               <PriceChart key={selected.id} trend={selected} />
             </div>
-            <div id="tese" className="scroll-mt-28 lg:col-span-4">
+            <div id="tese" className="min-w-0 scroll-mt-28 lg:col-span-4">
               <ThesisPanel trend={selected} />
             </div>
           </div>

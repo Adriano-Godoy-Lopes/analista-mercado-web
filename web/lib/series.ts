@@ -4,6 +4,8 @@ export type Period = "1M" | "6M" | "1A" | "5A" | "MÁX";
 
 export const PERIODS: Period[] = ["1M", "6M", "1A", "5A", "MÁX"];
 
+export type ChartEvent = MarketEvent & { time: number };
+
 export type ChartPoint = {
   time: number;
   open: number;
@@ -11,7 +13,7 @@ export type ChartPoint = {
   low: number;
   close: number;
   volume: number;
-  events: MarketEvent[];
+  events: ChartEvent[];
 };
 
 const PERIOD_BARS: Record<Period, number | null> = {
@@ -55,10 +57,6 @@ function tradingDays(count: number): number[] {
   return days.reverse();
 }
 
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
-
 const historyCache = new Map<string, ChartPoint[]>();
 
 export function dailyHistory(trend: Trend): ChartPoint[] {
@@ -99,10 +97,10 @@ export function dailyHistory(trend: Trend): ChartPoint[] {
   });
 
   const days = tradingDays(TOTAL_BARS);
-  const eventsByIndex = new Map<number, MarketEvent[]>();
+  const eventsByIndex = new Map<number, ChartEvent[]>();
   for (const event of trend.events) {
     const index = last - event.barsAgo;
-    eventsByIndex.set(index, [...(eventsByIndex.get(index) ?? []), event]);
+    eventsByIndex.set(index, [...(eventsByIndex.get(index) ?? []), { ...event, time: days[index] }]);
   }
 
   const points = closes.map((close, i) => {
@@ -115,10 +113,10 @@ export function dailyHistory(trend: Trend): ChartPoint[] {
     const volumeFactor = Math.min(3, Math.max(0.3, 0.55 + 0.5 * rand() + move * 0.18));
     return {
       time: days[i],
-      open: round2(open),
-      high: round2(high),
-      low: round2(low),
-      close: round2(close),
+      open,
+      high,
+      low,
+      close,
       volume: Math.round(trend.avgVolume * volumeFactor),
       events: eventsByIndex.get(i) ?? [],
     };
@@ -133,7 +131,7 @@ function toWeekly(points: ChartPoint[]): ChartPoint[] {
   for (let i = 0; i < points.length; i += 5) {
     const chunk = points.slice(i, i + 5);
     weekly.push({
-      time: chunk[0].time,
+      time: chunk[chunk.length - 1].time,
       open: chunk[0].open,
       high: Math.max(...chunk.map((p) => p.high)),
       low: Math.min(...chunk.map((p) => p.low)),

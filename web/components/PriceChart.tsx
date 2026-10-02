@@ -274,7 +274,12 @@ export function PriceChart({ trend }: { trend: Trend }) {
                       className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
                       style={{ background: EVENT_COLORS[event.kind] }}
                     />
-                    <span className="text-soft">{event.title}</span>
+                    <span className="text-soft">
+                      {event.time !== hover.point.time && (
+                        <span className="mr-1 font-mono text-muted">{formatDate(event.time)}</span>
+                      )}
+                      {event.title}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -291,12 +296,12 @@ export function PriceChart({ trend }: { trend: Trend }) {
         {periodEvents.length === 0 ? (
           <p className="text-xs text-muted">Nenhum fato relevante neste período.</p>
         ) : (
-          <ul className="grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
             {periodEvents.flatMap((p) =>
               p.events.map((event) => (
-                <li key={`${p.time}-${event.title}`} className="flex items-center gap-2 text-xs">
+                <li key={`${event.time}-${event.title}`} className="flex min-w-0 items-center gap-2 text-xs">
                   <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: EVENT_COLORS[event.kind] }} />
-                  <span className="w-24 shrink-0 whitespace-nowrap font-mono text-[11px] text-muted">{formatDate(p.time)}</span>
+                  <span className="w-24 shrink-0 whitespace-nowrap font-mono text-[11px] text-muted">{formatDate(event.time)}</span>
                   <span className="truncate text-soft">{event.title}</span>
                 </li>
               )),

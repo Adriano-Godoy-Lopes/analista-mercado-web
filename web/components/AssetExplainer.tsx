@@ -11,7 +11,7 @@ export function AssetExplainer({ trend }: { trend: Trend }) {
   const { explainer } = trend;
 
   return (
-    <div className="grid gap-px overflow-hidden rounded-sm border border-line bg-line lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-px overflow-hidden rounded-sm border border-line bg-line lg:grid-cols-3">
       <section className="flex flex-col gap-4 bg-carbon p-5">
         <h3 className="flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-soft">
           <BookOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
