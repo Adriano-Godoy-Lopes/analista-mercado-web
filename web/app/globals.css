@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-void: #000000;
-  --color-carbon: #050505;
-  --color-panel: #111111;
-  --color-raised: #1c1c1c;
-  --color-line: #222222;
-  --color-muted: #888888;
-  --color-soft: #aaaaaa;
-  --color-up: #00e08a;
-  --color-down: #ff4d5e;
-  --color-electric: #2f80ff;
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-jetbrains-mono);
+  --color-void: #07090d;
+  --color-carbon: #0c1016;
+  --color-panel: #10151d;
+  --color-raised: #171e29;
+  --color-line: #1c2330;
+  --color-edge: #2a3342;
+  --color-muted: #6b7588;
+  --color-soft: #a3acbd;
+  --color-fg: #e7eaf0;
+  --color-up: #1fc37e;
+  --color-down: #f0505e;
+  --color-electric: #3b82f6;
+  --color-brand: #f2a93b;
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
 }
 
 html {
@@ -22,15 +25,16 @@ html {
 
 body {
   background: var(--color-void);
-  color: #ffffff;
+  color: var(--color-fg);
+  font-feature-settings: "cv11", "ss01";
 }
 
 ::selection {
-  background: #ffffff;
-  color: #000000;
+  background: color-mix(in srgb, var(--color-brand) 35%, transparent);
+  color: #ffffff;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #222222 transparent;
+  scrollbar-color: #2a3342 transparent;
 }

@@ -1,31 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Radar } from "lucide-react";
+import { CalendarClock, ListFilter } from "lucide-react";
 import { TRENDS } from "@/lib/mock-data";
-import type { Trend } from "@/lib/types";
+import { LAST_SESSION } from "@/lib/series";
+import { formatDate } from "@/lib/format";
 import { Header } from "./Header";
 import { SectionHeader } from "./SectionHeader";
-import { TrendCard } from "./TrendCard";
+import { MarketSummary } from "./MarketSummary";
+import { Panel } from "./Panel";
+import { ScreenerTable, sortValue, type SortState } from "./ScreenerTable";
+import { PerformancePanel } from "./PerformancePanel";
+import { InstrumentHeader } from "./InstrumentHeader";
 import { PriceChart } from "./PriceChart";
 import { ThesisPanel } from "./ThesisPanel";
 import { AssetExplainer } from "./AssetExplainer";
-
-type SortKey = "momentum" | "d30" | "y1" | "dy";
-
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "momentum", label: "Momentum" },
-  { value: "d30", label: "30D" },
-  { value: "y1", label: "1A" },
-  { value: "dy", label: "Div. Yield" },
-];
-
-const sortValue: Record<SortKey, (trend: Trend) => number> = {
-  momentum: (t) => t.momentum,
-  d30: (t) => t.change.d30,
-  y1: (t) => t.change.y1,
-  dy: (t) => t.valuation.dy,
-};
+import { Logo } from "./Logo";
 
 function normalize(text: string): string {
   return text
@@ -36,7 +26,7 @@ function normalize(text: string): string {
 
 export function Terminal() {
   const [query, setQuery] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("momentum");
+  const [sort, setSort] = useState<SortState>({ key: "momentum", direction: "desc" });
   const [selectedId, setSelectedId] = useState(TRENDS[0].id);
 
   const visible = useMemo(() => {
@@ -44,79 +34,88 @@ export function Terminal() {
     const filtered = q
       ? TRENDS.filter((t) => normalize(`${t.ticker} ${t.name} ${t.sector} ${t.vehicle}`).includes(q))
       : TRENDS;
-    return [...filtered].sort((a, b) => sortValue[sortKey](b) - sortValue[sortKey](a));
-  }, [query, sortKey]);
+    const sign = sort.direction === "desc" ? 1 : -1;
+    return [...filtered].sort((a, b) => sign * (sortValue[sort.key](b) - sortValue[sort.key](a)));
+  }, [query, sort]);
 
   const selected = TRENDS.find((t) => t.id === selectedId) ?? TRENDS[0];
+
+  const select = (id: string) => {
+    setSelectedId(id);
+    document.getElementById("analise")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <>
       <Header query={query} onQueryChange={setQuery} resultCount={visible.length} />
 
-      <main className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-12 px-4 pb-16 pt-[120px] sm:px-6">
-        <section id="radar" className="scroll-mt-28 flex flex-col gap-5">
-          <SectionHeader
-            index="01"
-            title="Radar de tendências"
-            subtitle="Setores e ativos com maior tração. Selecione um card para abrir a análise."
-          >
-            <div className="flex items-center gap-2">
-              <Radar className="h-3.5 w-3.5 text-muted" strokeWidth={1.5} />
-              <span className="text-[10px] uppercase tracking-widest text-muted">Ordenar</span>
-              <div className="flex rounded-sm border border-line">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSortKey(option.value)}
-                    aria-pressed={sortKey === option.value}
-                    className={`px-2.5 py-1 font-mono text-[11px] transition-colors duration-150 ${
-                      sortKey === option.value ? "bg-white text-black" : "text-muted hover:bg-raised hover:text-white"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-10 px-4 pb-16 pt-[120px] sm:px-6">
+        <section id="visao-geral" className="flex scroll-mt-28 flex-col gap-5">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-[12px] font-medium text-brand">Mercados globais · Temas de investimento</p>
+              <h1 className="mt-1 text-[28px] font-semibold leading-tight tracking-tight">Terminal de Tendências</h1>
+              <p className="mt-1 max-w-2xl text-[14px] text-soft">
+                Monitoramento de setores com maior tração, teses fundamentalistas e explicações diretas para decidir com clareza.
+              </p>
             </div>
-          </SectionHeader>
-
-          {visible.length === 0 ? (
-            <div className="rounded-sm border border-dashed border-line p-10 text-center font-mono text-xs text-muted">
-              Nenhum ativo encontrado para &ldquo;{query}&rdquo;.
+            <div className="flex items-center gap-2 rounded-md border border-line bg-carbon px-3 py-2 text-[12px] text-muted">
+              <CalendarClock className="h-4 w-4" strokeWidth={1.75} />
+              Fechamento de <span className="font-medium text-fg">{formatDate(LAST_SESSION)}</span>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {visible.map((trend) => (
-                <TrendCard
-                  key={trend.id}
-                  trend={trend}
-                  selected={trend.id === selected.id}
-                  onSelect={setSelectedId}
-                />
-              ))}
-            </div>
-          )}
+          </div>
+          <MarketSummary trends={TRENDS} onSelect={select} />
         </section>
 
-        <section className="flex flex-col gap-5">
+        <section id="radar" className="flex scroll-mt-28 flex-col gap-4">
           <SectionHeader
-            index="02"
-            title={`Análise · ${selected.name}`}
-            subtitle={`${selected.vehicle} · passe o cursor no gráfico para ver preço, volume e fatos relevantes`}
+            title="Radar de tendências"
+            subtitle="Clique em um ativo para abrir a análise completa. Ordene pelas colunas."
           />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-            <div id="grafico" className="min-w-0 scroll-mt-28 lg:col-span-8">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <Panel
+              title="Screener de temas"
+              icon={ListFilter}
+              className="xl:col-span-8"
+              actions={
+                <span className="text-[12px] tabular-nums text-muted">
+                  {visible.length} de {TRENDS.length} ativos
+                </span>
+              }
+            >
+              <ScreenerTable
+                trends={visible}
+                selectedId={selected.id}
+                onSelect={select}
+                sort={sort}
+                onSortChange={setSort}
+                query={query}
+              />
+            </Panel>
+            <div className="xl:col-span-4">
+              <PerformancePanel trends={TRENDS} selectedId={selected.id} onSelect={select} />
+            </div>
+          </div>
+        </section>
+
+        <section id="analise" className="flex scroll-mt-28 flex-col gap-4">
+          <SectionHeader
+            title="Análise do ativo"
+            subtitle="Passe o cursor no gráfico para ver preço, volume e fatos relevantes."
+          />
+          <InstrumentHeader trend={selected} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <div className="min-w-0 lg:col-span-8">
               <PriceChart key={selected.id} trend={selected} />
             </div>
-            <div id="tese" className="min-w-0 scroll-mt-28 lg:col-span-4">
+            <div className="min-w-0 lg:col-span-4">
               <ThesisPanel trend={selected} />
             </div>
           </div>
         </section>
 
-        <section id="educacao" className="scroll-mt-28 flex flex-col gap-5">
+        <section id="educacao" className="flex scroll-mt-28 flex-col gap-4">
           <SectionHeader
-            index="03"
             title="Entenda o ativo"
             subtitle="Modelo de negócio, composição e glossário contextual, sem economês."
           />
@@ -124,10 +123,36 @@ export function Terminal() {
         </section>
       </main>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap justify-between gap-2 px-4 py-4 font-mono text-[10px] uppercase tracking-widest text-muted sm:px-6">
-          <span>MarketAnalyst // Terminal de Tendências</span>
-          <span>Dados simulados para fins educacionais · Não constitui recomendação de investimento</span>
+      <footer className="border-t border-line bg-carbon">
+        <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.5fr_1fr_1fr]">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <Logo className="h-5 w-5" />
+              <span className="text-[14px] font-semibold">MarketAnalyst</span>
+            </div>
+            <p className="max-w-md text-[12px] leading-relaxed text-muted">
+              Conteúdo educacional. As informações apresentadas não constituem recomendação de compra ou venda de valores
+              mobiliários. Rentabilidade passada não é garantia de rentabilidade futura.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 text-[12px]">
+            <p className="font-medium text-fg">Metodologia</p>
+            <p className="leading-relaxed text-muted">
+              Momentum combina tendência de preço e força relativa (0–100). Teses consideram drivers, riscos e valuation.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 text-[12px]">
+            <p className="font-medium text-fg">Dados</p>
+            <p className="leading-relaxed text-muted">
+              Cotações e séries históricas simuladas para fins de demonstração. Último fechamento: {formatDate(LAST_SESSION)}.
+            </p>
+          </div>
+        </div>
+        <div className="border-t border-line">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap justify-between gap-2 px-4 py-4 text-[11px] text-muted sm:px-6">
+            <span>© 2026 MarketAnalyst · Terminal de Tendências</span>
+            <span>Feito no Brasil</span>
+          </div>
         </div>
       </footer>
     </>
